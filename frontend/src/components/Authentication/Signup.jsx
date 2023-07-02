@@ -1,5 +1,7 @@
-import { FormLabel, VStack, FormControl, Input, InputGroup, InputRightElement, Button } from '@chakra-ui/react'
+import { FormLabel, VStack, FormControl, Input, InputGroup, InputRightElement, Button, useToast } from '@chakra-ui/react'
 import React, { useState } from 'react'
+import axios from 'axios';
+import { useHistory } from 'react-router-dom';
 
 const Signup = () => {
 
@@ -9,16 +11,130 @@ const Signup = () => {
         password: "",
         setPassword: "",
         pic: "",
+        loading : false
     });
 
     const [show, setShow] = useState(false);
+    const toast = useToast()
+    const history = useHistory();
 
     const handleClick = () => {
         setShow(!show);
     }
 
-    const submitHandler = () => {
-        console.log("submitHandler called")
+
+    const postDetails = (pics) =>{
+        console.log("Pics => ", pics);
+       setSignup({...signup, loading:true});
+       if(pics === undefined){
+        toast({
+            title:"Please Select an Image!",
+            status:"warning",
+            duration:5000,
+            isClosable:true,
+            position:"bottom"
+        })
+
+       }
+       if(pics.type === "image/jpeg" || pics.type === "image/png" || pics.type === "image/jpg"){
+        const data = new FormData();
+        data.append("file", pics);
+        data.append("upload_preset", "chatty");
+        data.append("cloud_name", "nischaycloud");
+        fetch("https://api.cloudinary.com/v1_1/nischaycloud/image/upload",{
+            method:"POST", body:data
+        }).then((res)=>res.json()).then(data=>{
+            const picURL = data.url.toString();
+            setSignup({...signup, pic : picURL});
+            console.log("POST Details Function : ->  ", signup)
+            setSignup({...signup, loading:false});
+
+        }).catch(err=>{
+            console.log("Error while uploading the pic", err);
+            setSignup({...signup, loading:false});
+        })
+       }
+       else{
+        toast({
+          title:"Please Select an Image!",
+          status:"warning",
+          duration:5000,
+          isClosable:true,
+          position:"bottom"
+        })
+        setSignup({ ...signup,loading:false})
+        return;
+       }
+
+    }
+
+
+
+    const submitHandler = async () => {
+        setSignup({...signup,loading:true});
+        if(!signup.name || !signup.email || !signup.password || !signup.setPassword){
+            toast({
+                title:"Please fill all the Feilds!",
+                status:"warning",
+                duration:5000,
+                isClosable:true,
+                position:"bottom",
+            });
+        setSignup({...signup,loading:false}); 
+        return             
+        }
+        if(signup.password !== signup.setPassword){
+               toast({
+                title:"Password and confirmPassword are not matched!",
+                status:"warning",
+                duration:5000,
+                isClosable:true,
+                position:"bottom",
+            });
+            return;
+
+        }
+        try{
+
+            console.log("While saving the data to mongoDB", signup);
+
+            const {name, email, password, setPassword, pic} = signup;
+
+            const config = {
+                headers : {
+                    "Content-type" :"application/json"
+                },
+
+            };
+            const {data} = await axios.post("/api/user", {name,email,password,setPassword,pic}, config)
+            toast({
+                title:"Registration Successful",
+                status:"success",
+                duration:5000,
+                isClosable:true,
+                position:"bottom"
+            })
+            localStorage.setItem("userInfo", JSON.stringify(data));
+            setSignup({loading:false});
+           history.push("/chats");
+
+        }
+        catch(error){
+             toast({
+                title:"Error Occured!",
+                description:error.response.data.message,
+                status:"error",
+                duration:5000,
+                isClosable:true,
+                position:"bottom"
+            })
+            setSignup({loading:false});
+        }
+
+
+
+
+        // console.log("submitHandler called")
     }
 
 
@@ -70,11 +186,11 @@ const Signup = () => {
 
             <FormControl id='pic'>
                 <FormLabel>Upload Your Picture</FormLabel>
-                <Input type='file' p={1.5} accept='image/*' value={signup.email} onChange={(e) => setSignup({ ...signup, pic: e.target.files[0] })} />
+                <Input type='file' p={1.5} accept='image/*' value={signup.pic} onChange={(e) => postDetails(e.target.files[0])} />
             </FormControl>
 
 
-            <Button colorScheme='blue' width={"100%"} style={{ marginTop: 15 }} onClick={submitHandler}>SignUp</Button>
+            <Button colorScheme='blue' width={"100%"} style={{ marginTop: 15 }} onClick={submitHandler} isLoading = {signup.loading}>SignUp</Button>
 
 
         </VStack>
