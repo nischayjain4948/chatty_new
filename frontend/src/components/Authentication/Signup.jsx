@@ -10,9 +10,10 @@ const Signup = () => {
         email: "",
         password: "",
         setPassword: "",
-        pic: "",
         loading : false
     });
+
+    const [pic, setPic] = useState("");
 
     const [show, setShow] = useState(false);
     const toast = useToast()
@@ -23,7 +24,7 @@ const Signup = () => {
     }
 
 
-    const postDetails = (pics) =>{
+    const postDetails = async (pics) =>{
         console.log("Pics => ", pics);
        setSignup({...signup, loading:true});
        if(pics === undefined){
@@ -41,14 +42,12 @@ const Signup = () => {
         data.append("file", pics);
         data.append("upload_preset", "chatty");
         data.append("cloud_name", "nischaycloud");
-        fetch("https://api.cloudinary.com/v1_1/nischaycloud/image/upload",{
+       await fetch("https://api.cloudinary.com/v1_1/nischaycloud/image/upload",{
             method:"POST", body:data
         }).then((res)=>res.json()).then(data=>{
-            const picURL = data.url.toString();
-            setSignup({...signup, pic : picURL});
-            console.log("POST Details Function : ->  ", signup)
-            setSignup({...signup, loading:false});
-
+          const picURL = data.url.toString();
+          setPic(picURL);
+        setSignup({...signup, loading:false});
         }).catch(err=>{
             console.log("Error while uploading the pic", err);
             setSignup({...signup, loading:false});
@@ -96,9 +95,9 @@ const Signup = () => {
         }
         try{
 
-            console.log("While saving the data to mongoDB", signup);
+            console.log("While saving the data to mongoDB");
 
-            const {name, email, password, setPassword, pic} = signup;
+            const {name, email, password, setPassword} = signup;
 
             const config = {
                 headers : {
@@ -186,7 +185,7 @@ const Signup = () => {
 
             <FormControl id='pic'>
                 <FormLabel>Upload Your Picture</FormLabel>
-                <Input type='file' p={1.5} accept='image/*' value={signup.pic} onChange={(e) => postDetails(e.target.files[0])} />
+                <Input type='file' p={1.5} accept='image/*'  onChange={(e) => postDetails(e.target.files[0])} />
             </FormControl>
 
 
