@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3500
 const userRoutes = require("./routes/userRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 const cors = require("cors");
 const {ConnectDB} = require("./config/db");
 const {notFound, errorHandler} = require("./middleware/errorMiddleware");
@@ -15,6 +16,9 @@ ConnectDB();
 
 //  All userRoutes must be placed here only.
 app.use("/api/user", userRoutes);
+
+// chats Routes
+app.use("/api/chat", chatRoutes);
 
 // middleWares Functions..
 app.use(notFound);
